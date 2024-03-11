@@ -10,8 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.engine import engine
 from database.models import ArticleRequest
-from keyboards import menu, command_back_to_menu, greet
-
+from keyboards import menu, command_back_to_menu, greet, subscribe_menu, back_to_menu
 
 WB_CARD_API_URL = os.getenv("WB_CARD_API_URL")
 
@@ -43,7 +42,7 @@ async def back_to_menu_handler(message: Message) -> None:
 
 @dp.callback_query(F.data == "find_article")
 async def input_article_to_find_handler(callback_query: CallbackQuery) -> None:
-    """"Handler для нажатия кнопки """
+    """"Handler для нажатия кнопки поиска по артикулу"""
     await callback_query.message.answer(
         text="Введите артикул"
     )
@@ -51,7 +50,7 @@ async def input_article_to_find_handler(callback_query: CallbackQuery) -> None:
 
 @dp.callback_query(F.data == "get_latest_entries")
 async def get_latest_entries_handler(callback_query: CallbackQuery) -> None:
-    """"Handler для нажатия кнопки """
+    """"Handler для получения последних запросов"""
     await callback_query.message.answer(
         text="Последние запросы:"
     )
@@ -66,9 +65,9 @@ async def get_latest_entries_handler(callback_query: CallbackQuery) -> None:
             text=f"Запрос: №{entire.id}"
                  f"\nПользователь: {entire.user_id}"
                  f"\nАртикул: {entire.article}"
-                 f"\nДата: {entire.request_datetime}"
+                 f"\nДата: {entire.request_datetime}",
+            reply_markup=back_to_menu
         )
-
 
 @dp.message(F.text.regexp(r'\d{8}'))
 async def find_article_handler(message: Message):
@@ -90,14 +89,15 @@ async def find_article_handler(message: Message):
         )
 
     # Поиск в ответе элемента с товаром
-    article_data = response_data.get('products')[0]
+    article_data = response_data.get('products')
     if not article_data:
         return message.answer(
             text="Такого артикула не было найдено на сайте Wildberries!"
         )
 
+    # Подсчет остатков на всех складах
     item_stocks = 0
-    for size in article_data.get('sizes'):
+    for size in article_data[0].get('sizes'):
         for stock in size.get('stocks'):
             item_stocks += stock.get('qty')
 
@@ -132,5 +132,9 @@ async def find_article_handler(message: Message):
         )
 
     await message.answer(
-        text=result_message
+        text=result_message,
+    )
+    await message.answer(
+        text="Вы можете подписаться на этот артикул, чтобы получать уведомления!",
+        reply_markup=subscribe_menu
     )
