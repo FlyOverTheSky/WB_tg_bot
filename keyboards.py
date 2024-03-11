@@ -1,15 +1,16 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 command_find_article = "Получить информацию по товару"
-command_stop_notions = "Остановить уведомления"
-command_get_latest_data = "получить информацию из БД"
+command_stop_notifications = "Остановить уведомления"
+command_get_latest_data = "Получить информацию из БД"
 command_back_to_menu = "Меню"
 
 command_subscribe = "Подписаться"
 
 inline_main_keyboard = [
-    [InlineKeyboardButton(text=command_find_article, callback_data="find_article"),
-     InlineKeyboardButton(text=command_get_latest_data, callback_data="get_latest_entries"),]
+    [InlineKeyboardButton(text=command_find_article, callback_data="find_article")],
+     [InlineKeyboardButton(text=command_get_latest_data, callback_data="get_latest_entries")],
+     [InlineKeyboardButton(text=command_stop_notifications, callback_data="stop_notifications")],
 ]
 
 back_to_menu_keyboard = [
