@@ -18,9 +18,10 @@ import sys
 from os import getenv
 
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from database.engine import engine
+from database.engine import engine, create_db
 from database.models import ArticleRequest
 from keyboards import greet, menu, command_back_to_menu
 
@@ -57,6 +58,7 @@ async def back_to_menu_handler(message: types.Message) -> None:
 
 @dp.callback_query(F.data == "find_article")
 async def input_article_to_find_handler(callback_query: CallbackQuery, state: FSMContext) -> None:
+    """"Handler для нажатия кнопки """
     await callback_query.message.answer(
         text="Введите артикул"
     )
@@ -64,25 +66,30 @@ async def input_article_to_find_handler(callback_query: CallbackQuery, state: FS
 
 @dp.message(F.text.regexp(r'\d{8}'))
 async def find_article_handler(message: types.Message):
+    """Handler для поиска на WB артикула"""
     await message.answer(
         text="Артикул принят! Собираю информацию 🔎"
     )
+
     wb_api_url_params["nm"] = int(message.text)
     wb_response = requests.get(
         url=WB_CARD_API_URL,
         params=wb_api_url_params)
     response_data = json.loads(wb_response.content).get('data')
+
+    # Поиск в ответе элемента данных с сайта WB.
     if not response_data:
         return message.answer(
             text="Возникла ошибка с внешним API, пожалуйста сообщите @AVCAMID"
         )
 
+    # Поиск в ответе элемента с товаром
     article_data = response_data.get('products')[0]
     if not article_data:
         return message.answer(
             text="Такого артикула не было найдено на сайте Wildberries!"
         )
-    print(article_data)
+
     item_stocks = 0
     for size in article_data.get('sizes'):
         for stock in size.get('stocks'):
@@ -98,13 +105,16 @@ async def find_article_handler(message: types.Message):
         "item_stocks": item_stocks
     }
 
-    with Session(engine) as session:
+    # Создание асинхронной сессии для сохранения запроса в БД
+    async with AsyncSession(engine) as session:
         new_article = ArticleRequest(
             user_id=message.from_user.id,
-            article=int(message.text),
-
+            article=message.text,
         )
+        session.add(new_article)
+        await session.commit()
 
+    # Формирование сообщения для пользователя
     result_message = (
         f"Наименование: {search_result["item_name"]}"
         f"\nАртикул: {search_result["item_article"]}"
@@ -121,6 +131,7 @@ async def find_article_handler(message: types.Message):
 
 
 async def main() -> None:
+    await create_db()
     bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
     await dp.start_polling(bot)
 

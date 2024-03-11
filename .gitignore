@@ -153,3 +153,4 @@ media/
 node_modules
 
 .env
+test.py

@@ -9,6 +9,7 @@ wb_api_url_params = {
     "nm": "{article}"
 }
 
+
 def find(article):
     wb_api_url_params["nm"].format(article=article)
     wb_response = requests.get(
