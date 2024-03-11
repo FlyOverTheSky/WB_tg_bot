@@ -94,10 +94,11 @@ async def find_article_handler(message: Message):
         return message.answer(
             text="Такого артикула не было найдено на сайте Wildberries!"
         )
+    article_data = article_data[0]
 
     # Подсчет остатков на всех складах
     item_stocks = 0
-    for size in article_data[0].get('sizes'):
+    for size in article_data.get('sizes'):
         for stock in size.get('stocks'):
             item_stocks += stock.get('qty')
 
