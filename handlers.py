@@ -5,6 +5,7 @@ import requests
 from aiogram import F, Dispatcher
 from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.engine import engine
@@ -13,7 +14,6 @@ from keyboards import menu, command_back_to_menu, greet
 
 
 WB_CARD_API_URL = os.getenv("WB_CARD_API_URL")
-
 
 dp = Dispatcher()
 
@@ -47,6 +47,27 @@ async def input_article_to_find_handler(callback_query: CallbackQuery) -> None:
     await callback_query.message.answer(
         text="Введите артикул"
     )
+
+
+@dp.callback_query(F.data == "get_latest_entries")
+async def get_latest_entries_handler(callback_query: CallbackQuery) -> None:
+    """"Handler для нажатия кнопки """
+    await callback_query.message.answer(
+        text="Последние запросы:"
+    )
+
+    async with AsyncSession(engine) as session:
+        latest_entries = await session.scalars(
+            select(ArticleRequest).limit(5).order_by(desc(ArticleRequest.request_datetime))
+        )
+
+    for entire in latest_entries:
+        await callback_query.message.answer(
+            text=f"Запрос: №{entire.id}"
+                 f"\nПользователь: {entire.user_id}"
+                 f"\nАртикул: {entire.article}"
+                 f"\nДата: {entire.request_datetime}"
+        )
 
 
 @dp.message(F.text.regexp(r'\d{8}'))
