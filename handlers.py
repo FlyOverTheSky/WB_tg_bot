@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 
@@ -10,9 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.engine import engine
 from database.models import ArticleRequest
-from keyboards import menu, command_back_to_menu, greet, subscribe_menu, back_to_menu
+from keyboards import menu, command_back_to_menu, greet, subscribe_menu, default_menu, command_find_article, \
+    command_get_latest_entires
+from notifications import start_notification, main_notifications
 
 WB_CARD_API_URL = os.getenv("WB_CARD_API_URL")
+TIME_DELAY = int(os.getenv("TIME_DELAY", 5))
 
 dp = Dispatcher()
 
@@ -22,6 +26,8 @@ wb_api_url_params = {
     "dest": -1257786,
     "spp": 30,
 }
+
+current_task_notifications = None
 
 
 @dp.message(CommandStart())
@@ -37,6 +43,39 @@ async def back_to_menu_handler(message: Message) -> None:
     await message.answer(
         text="Главное меню",
         reply_markup=menu
+    )
+
+
+@dp.callback_query(F.data == "subscribe")
+async def start_notifications_handler(callback_query: CallbackQuery) -> None:
+    global current_task_notifications
+    current_task_notifications = asyncio.create_task(
+        start_notification(
+            interval_sec=TIME_DELAY,
+            coro_name=main_notifications,
+            message=callback_query.message,
+        )
+    )
+
+
+@dp.message(F.text == "Остановить уведомления")
+@dp.callback_query(F.data == "unsubscribe")
+async def stop_notifications_handler(input_msg) -> None:
+    global current_task_notifications
+    if isinstance(input_msg, CallbackQuery):
+        message = input_msg.message
+    else:
+        message = input_msg
+
+    if current_task_notifications:
+        current_task_notifications.cancel()
+        answer = "Теперь уведомление об этом артикуле не будут приходить"
+    else:
+        answer = "Вы не подписаны на артикул."
+
+    await message.answer(
+        text=answer,
+        reply_markup=default_menu
     )
 
 
@@ -66,8 +105,9 @@ async def get_latest_entries_handler(callback_query: CallbackQuery) -> None:
                  f"\nПользователь: {entire.user_id}"
                  f"\nАртикул: {entire.article}"
                  f"\nДата: {entire.request_datetime}",
-            reply_markup=back_to_menu
+            reply_markup=default_menu
         )
+
 
 @dp.message(F.text.regexp(r'\d{8}'))
 async def find_article_handler(message: Message):
@@ -130,12 +170,9 @@ async def find_article_handler(message: Message):
         f"\nРейтинг товара: {search_result["item_rating"]}"
         f"\nОсталость товара: {search_result["item_stocks"]}"
         f"\nСсылка на товар: https://www.wildberries.ru/catalog/{message.text}/detail.aspx"
-        )
+    )
 
     await message.answer(
         text=result_message,
-    )
-    await message.answer(
-        text="Вы можете подписаться на этот артикул, чтобы получать уведомления!",
         reply_markup=subscribe_menu
     )
