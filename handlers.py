@@ -60,12 +60,10 @@ async def start_notifications_handler(callback_query: CallbackQuery) -> None:
 
 @dp.message(F.text == "Остановить уведомления")
 @dp.callback_query(F.data == "unsubscribe")
-async def stop_notifications_handler(input_msg) -> None:
+async def stop_notifications_handler(message) -> None:
     global current_task_notifications
-    if isinstance(input_msg, CallbackQuery):
-        message = input_msg.message
-    else:
-        message = input_msg
+    if isinstance(message, CallbackQuery):
+        message = message.message
 
     if current_task_notifications:
         current_task_notifications.cancel()
@@ -79,18 +77,26 @@ async def stop_notifications_handler(input_msg) -> None:
     )
 
 
+@dp.message(F.text == "Получить информацию по товару")
 @dp.callback_query(F.data == "find_article")
-async def input_article_to_find_handler(callback_query: CallbackQuery) -> None:
+async def input_article_to_find_handler(message) -> None:
     """"Handler для нажатия кнопки поиска по артикулу"""
-    await callback_query.message.answer(
+    if isinstance(message, CallbackQuery):
+        message = message.message
+
+    await message.answer(
         text="Введите артикул"
     )
 
 
+@dp.message(F.text == "Получить информацию из БД")
 @dp.callback_query(F.data == "get_latest_entries")
-async def get_latest_entries_handler(callback_query: CallbackQuery) -> None:
+async def get_latest_entries_handler(message) -> None:
     """"Handler для получения последних запросов"""
-    await callback_query.message.answer(
+    if isinstance(message, CallbackQuery):
+        message = message.message
+
+    await message.answer(
         text="Последние запросы:"
     )
 
@@ -100,7 +106,7 @@ async def get_latest_entries_handler(callback_query: CallbackQuery) -> None:
         )
 
     for entire in latest_entries:
-        await callback_query.message.answer(
+        await message.answer(
             text=f"Запрос: №{entire.id}"
                  f"\nПользователь: {entire.user_id}"
                  f"\nАртикул: {entire.article}"
@@ -112,11 +118,18 @@ async def get_latest_entries_handler(callback_query: CallbackQuery) -> None:
 @dp.message(F.text.regexp(r'\d{8}'))
 async def find_article_handler(message: Message):
     """Handler для поиска на WB артикула"""
+
+    try:
+        wb_api_url_params["nm"] = int(message.text)
+    except ValueError:
+        return message.answer(
+            text="Неправильный артикул, попробуйте ещё раз!"
+        )
+
     await message.answer(
         text="Артикул принят! Собираю информацию 🔎"
     )
 
-    wb_api_url_params["nm"] = int(message.text)
     wb_response = requests.get(
         url=WB_CARD_API_URL,
         params=wb_api_url_params)
