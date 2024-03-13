@@ -15,7 +15,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/dat
   backend:
-    build: ./bot/
+    image: flyoverthesky/wb_tg_bot:latest
     restart: always
     env_file: bot/.env
     depends_on:

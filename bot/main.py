@@ -18,12 +18,13 @@ WB_CARD_API_URL = getenv("WB_CARD_API_URL")
 
 
 async def main() -> None:
+    logger = logging.getLogger()
     while True:
         try:
             await create_db()
             break
         except ConnectionRefusedError:
-            print('database connection refused, retrying in 5 seconds...')
+            logger.error('database connection refused, retrying in 5 seconds...')
             await asyncio.sleep(5)
     bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
     await dp.start_polling(bot)
