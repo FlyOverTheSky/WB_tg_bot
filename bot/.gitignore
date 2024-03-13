@@ -152,5 +152,5 @@ media/
 # Others
 node_modules
 
-.env
-test.py
+bot/.env
+bot/test.py

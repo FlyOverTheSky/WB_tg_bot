@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import sys
 
 import requests
 from aiogram import F, Dispatcher
@@ -9,13 +10,14 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
+sys.path.append(os.getcwd())
 from database.engine import engine
 from database.models import ArticleRequest
 from keyboards import menu, command_back_to_menu, greet, subscribe_menu, default_menu, command_find_article, \
     command_get_latest_entires
 from notifications import start_notification, main_notifications
 
-WB_CARD_API_URL = os.getenv("WB_CARD_API_URL")
+WB_CARD_API_URL = os.getenv("WB_CARD_API_URL", )
 TIME_DELAY = int(os.getenv("TIME_DELAY", 5))
 
 dp = Dispatcher()
@@ -176,12 +178,12 @@ async def find_article_handler(message: Message):
 
     # Формирование сообщения для пользователя
     result_message = (
-        f"Наименование: {search_result["item_name"]}"
-        f"\nАртикул: {search_result["item_article"]}"
-        f"\nЦена без скидки {search_result["item_price"]}"
-        f"\nЦена со скидкой: {search_result["item_saleprice"]}"
-        f"\nРейтинг товара: {search_result["item_rating"]}"
-        f"\nОсталость товара: {search_result["item_stocks"]}"
+        f"Наименование: {search_result['item_name']}"
+        f"\nАртикул: {search_result['item_article']}"
+        f"\nЦена без скидки {search_result['item_price']}"
+        f"\nЦена со скидкой: {search_result['item_saleprice']}"
+        f"\nРейтинг товара: {search_result['item_rating']}"
+        f"\nОсталость товара: {search_result['item_stocks']}"
         f"\nСсылка на товар: https://www.wildberries.ru/catalog/{message.text}/detail.aspx"
     )
 

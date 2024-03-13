@@ -1,0 +1,22 @@
+version: '3'
+
+volumes:
+  pg_data:
+
+services:
+  db:
+    image: postgres
+    restart: always
+    env_file: bot/.env
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_DB: bot
+    volumes:
+      - pg_data:/var/lib/postgresql/dat
+  backend:
+    build: ./bot/
+    restart: always
+    env_file: bot/.env
+    depends_on:
+      - db
