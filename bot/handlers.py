@@ -104,7 +104,7 @@ async def get_latest_entries_handler(message) -> None:
 
     async with AsyncSession(engine) as session:
         latest_entries = await session.scalars(
-            select(ArticleRequest).limit(5).order_by(desc(ArticleRequest.request_datetime))
+            select(ArticleRequest).limit(5).order_by(desc(ArticleRequest.id))
         )
 
     for entire in latest_entries:
